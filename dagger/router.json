@@ -1,0 +1,6 @@
+{
+    "mode": "history",
+    "routing": {
+        "modules": ["app"]
+    }
+}
