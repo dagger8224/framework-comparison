@@ -1,12 +1,11 @@
 <html>
     <script type="dagger/modules">
         {
-            view: '#view',
-            postList: './PostList.html'
+            view: '#view'
         }
     </script>
     <template id="view">
-        <post__list />
+        <template *html#route="$route.constants.viewName"></template>
     </template>
 </html>
 

@@ -4,6 +4,7 @@
             <h5 class="card-title">{{ post.title }}</h5>
             <p class="card-text">{{ post.body }}</p>
             <div class="text-end">
+                <RouterLink :to="`/edit/${post.id}`" class="btn btn-primary me-2">Edit</RouterLink>
                 <button class="btn btn-danger" @click="onDeleteClick(post)">Delete</button>
             </div>
         </div>

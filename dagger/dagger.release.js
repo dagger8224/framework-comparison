@@ -1,6 +1,6 @@
 /* ************************************************************************
  *  <copyright file="dagger.release.js" company="DAGGER TEAM">
- *  Copyright (c) 2016, 2024 All Right Reserved
+ *  Copyright (c) 2016, 2025 All Right Reserved
  *
  *  THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY
  *  KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -881,7 +881,7 @@ export default ((context = Symbol('context'), currentController = null, directiv
 }) => {
     NodeContext.prototype.updateController = ((queueingControllerSet = new Set, processor = (nodeContext, controller, force) => {
         if (!nodeContext.profile) { return; }
-        const { decorators: { once, remove, router, lazy }, topologySet, updater, name } = controller, subscribable = !once || lazy;
+        const { decorators: { once, remove, route, lazy }, topologySet, updater, name } = controller, subscribable = !once || lazy;
         if (force || (topologySet && [...topologySet].some(topology => !Object.is(topology.oldValue, topology.value)))) {
             if (topologySet && topologySet.size) {
                 topologySet.forEach(topology => topology.unsubscribe(controller)); // TODO: optimize with cache
@@ -890,7 +890,7 @@ export default ((context = Symbol('context'), currentController = null, directiv
             const suspendedController = currentController;
             currentController = subscribable ? controller : null;
             const data = controller.processor(nodeContext.node);
-            subscribable && router && routerTopology.subscribe();
+            subscribable && route && routerTopology.subscribe();
             currentController = suspendedController;
             if (lazy && !name) { // lazy watch
                 controller.processor = data;
@@ -1022,7 +1022,7 @@ export default ((context = Symbol('context'), currentController = null, directiv
         if (Object.is(resolvedType, 'event')) {
             fields.event = name;
             if (lifeCycleDirectiveNames[name]) {
-                directives[name] = directiveResolver(value, fields, Object.is(name, 'sentry') ? '$nextRouter' : '$node');
+                directives[name] = directiveResolver(value, fields, Object.is(name, 'sentry') ? '$nextRoute' : '$node');
             } else {
                 directives.eventHandlers.push(directiveResolver(value, fields, '$node, $event'));
             }
@@ -1158,34 +1158,34 @@ export default ((context = Symbol('context'), currentController = null, directiv
     } catch (error) {
         return;
     }
-}, routingChangeResolver = ((routerChangeResolver = ((resolver = nextRouter => {
+}, routingChangeResolver = ((routerChangeResolver = ((resolver = nextRoute => {
     processorResolver();
-    const currentStyleModuleSet = rootScope.$router && styleModuleCache[rootScope.$router.path];
-    rootScope.$router = nextRouter;
+    const currentStyleModuleSet = rootScope.$route && styleModuleCache[rootScope.$route.path];
+    rootScope.$route = nextRoute;
     if (!routerTopology) {
-        routerTopology = [...nextRouter[meta]][0];
+        routerTopology = [...nextRoute[meta]][0];
         rootNodeProfiles.map(nodeProfile => new NodeContext(nodeProfile));
     }
     if (!Object.is(currentStyleModuleSet, styleModuleSet)) {
         currentStyleModuleSet && currentStyleModuleSet.forEach(style => (style.disabled = !styleModuleSet.has(style)));
         styleModuleSet.forEach(style => (style.disabled = false));
     }
-    anchorResolver(nextRouter.anchor);
-}) => nextRouter => {
-    const { path } = nextRouter;
+    anchorResolver(nextRoute.anchor);
+}) => nextRoute => {
+    const { path } = nextRoute;
     styleModuleSet = styleModuleCache[path] || (styleModuleCache[path] = new Set);
-    return rootNamespace.resolve(nextRouter.modules).then(() => resolver(nextRouter));
+    return rootNamespace.resolve(nextRoute.modules).then(() => resolver(nextRoute));
 })()) => () => {
     const slash = '/', anchorIndex = location.hash.lastIndexOf('#@'), anchor = (anchorIndex >= 0) ? location.hash.substring(anchorIndex + 2) : '';
     let fullPath = ((Object.is(routerConfigs.mode, 'history') ? `${ location.pathname }${ location.search }` : location.hash.replace(anchor, ''))).replace(routerConfigs.prefix, '');
     fullPath.startsWith(slash) || (fullPath = `${ slash }${ fullPath }`);
-    const { mode, aliases, prefix } = routerConfigs, [rawPath = '', query = ''] = fullPath.split('?'), path = rawPath.substring(1), scenarios = {}, paths = Object.is(rawPath, slash) ? [''] : rawPath.split(slash), routers = [];
+    const { mode, aliases, prefix } = routerConfigs, [rawPath = '', query = ''] = fullPath.split('?'), path = rawPath.substring(1), params = {}, paths = Object.is(rawPath, slash) ? [''] : rawPath.split(slash), routes = [];
     let redirectPath = null;
     if (Reflect.has(aliases, path)) {
         redirectPath = aliases[path];
-    } else if (rootRouter.match(routers, scenarios, paths)) {
-        routers.reverse();
-        redirectPath = routers.find(router => router.redirectPath || Object.is(router.redirectPath, ''))?.redirectPath;
+    } else if (rootRouter.match(routes, params, paths)) {
+        routes.reverse();
+        redirectPath = routes.find(route => route.redirectPath || Object.is(route.redirectPath, ''))?.redirectPath;
     } else if (Reflect.has(routerConfigs, 'default')) {
         redirectPath = routerConfigs.default;
     } else {
@@ -1194,7 +1194,7 @@ export default ((context = Symbol('context'), currentController = null, directiv
     if (redirectPath != null) {
         return history.replaceState(null, '', `${ query ? `${ redirectPath }?${ query }` : redirectPath }${ anchor }` || routerConfigs.prefix);
     }
-    const queries = {}, variables = Object.assign({}, ...routers.map(router => router.variables)), constants = Object.assign({}, ...routers.map(router => router.constants));
+    const queries = {}, variables = Object.assign({}, ...routes.map(route => route.variables)), constants = Object.assign({}, ...routes.map(route => route.constants));
     query && forEach([...new URLSearchParams(query)], ([key, value]) => (queries[key] = value));
     forEach(Object.keys(variables), key => {
         if (Reflect.has(queries, key) && !Reflect.has(constants, key)) {
@@ -1204,15 +1204,15 @@ export default ((context = Symbol('context'), currentController = null, directiv
             } catch (error) {}
         }
     });
-    const nextRouter = { url: location.href, mode, prefix, path, paths, modules: new Set(routers.map(router => router.modules).flat()), query, queries, scenarios, variables, constants, anchor };
-    Promise.all([...sentrySet].map(sentry => Promise.resolve(sentry.processor(nextRouter)).then(prevent => ({ sentry, prevent })))).then(results => {
+    const nextRoute = { url: location.href, mode, prefix, path, paths, modules: new Set(routes.map(route => route.modules).flat()), query, queries, params, variables, constants, anchor };
+    Promise.all([...sentrySet].map(sentry => Promise.resolve(sentry.processor(nextRoute)).then(prevent => ({ sentry, prevent })))).then(results => {
         const matchedOwners = results.filter(result => result.prevent).map(result => result.sentry.owner);
-        matchedOwners.length ? originalPushState.call(history, null, '', rootScope.$router.url) : routerChangeResolver(nextRouter);
+        matchedOwners.length ? originalPushState.call(history, null, '', rootScope.$route.url) : routerChangeResolver(nextRoute);
     });
 })(), Router = class {
-    constructor (router, parent = null) {
-        const { children, constants = {}, variables = {}, modules = [], tailable = false, redirect = '' } = router;
-        let path = (router.path || '').trim();
+    constructor (route, parent = null) {
+        const { children, constants = {}, variables = {}, modules = [], tailable = false, redirect = '' } = route;
+        let path = (route.path || '').trim();
         this.modules = arrayWrapper(modules);
         if (parent) {
             (!path || Object.is(path, '*')) && (path = '.+');
@@ -1224,21 +1224,30 @@ export default ((context = Symbol('context'), currentController = null, directiv
         if (redirect) {
             this.redirectPath = (redirect instanceof Function) ? redirect(rootScope, rootNamespace.module) : functionResolver(`($module, $scope) => { with ($module) with ($scope) return (() => { 'use strict'; return ${ redirect }; })() }`)(rootNamespace.module, rootScope);
         }
-        this.constants = constants, this.variables = variables, this.children = null, this.parent = parent, this.scenarios = (path instanceof Object) ? Object.keys(path).map(scenario => ({ scenario, regExp: new RegExp(path[scenario] || '^$') })) : [{ scenario: path, regExp: new RegExp(`^${ path }$`) }];
+        this.constants = constants, this.variables = variables, this.children = null, this.parent = parent, this.params = (path instanceof Object) ? Object.keys(path).map(param => ({ param, regExp: new RegExp(path[param] || '^.+$') })) : path.split('/').map(subPath => {
+            subPath = subPath.trim();
+            return subPath.startsWith(':') ? {
+                param: subPath.substring(1).trim(),
+                regExp: /^.+$/
+            } : {
+                param: subPath,
+                regExp: new RegExp(`^${ subPath }$`)
+            };
+        });
         children && (this.children = children.map(child => new Router(child, this)));
         this.tailable = tailable || !this.children?.length;
     }
-    match (routers, scenarios, paths, length = paths.length, start = 0) {
-        const scenarioLength = this.scenarios.length;
-        if ((length >= scenarioLength) && this.scenarios.every(({ scenario, regExp }, index) => {
+    match (routes, params, paths, length = paths.length, start = 0) {
+        const paramLength = this.params.length;
+        if ((length >= paramLength) && this.params.every(({ param, regExp }, index) => {
             const path = paths[start + index];
             if (regExp.test(path)) {
-                scenarios[scenario] = path;
+                params[param] = path;
                 return true;
             }
         })) {
-            start += scenarioLength;
-            return ((Object.is(length, start) && this.tailable) || this.children?.find(child => child.match(routers, scenarios, paths, length, start))) && routers.push(this);
+            start += paramLength;
+            return ((Object.is(length, start) && this.tailable) || this.children?.find(child => child.match(routes, params, paths, length, start))) && routes.push(this);
         }
     }
 }) => {
@@ -1287,7 +1296,7 @@ export default ((context = Symbol('context'), currentController = null, directiv
         routerConfigs = routers.content;
         const { prefix } = routerConfigs, isHistoryMode = Object.is(routerConfigs.mode, 'history');
         routerConfigs.prefix = `${ isHistoryMode ? '/' : '#' }${ prefix ? `${ prefix }/` : '' }`;
-        rootScope = Object.seal(proxyResolver({ $router: null }));
+        rootScope = Object.seal(proxyResolver({ $route: null }));
         moduleConfigNormalizer(modules.content);
         const html = document.documentElement, routing = routerConfigs.routing || { modules: Object.keys(modules.content) };
         rootScopeCallback = scope => {

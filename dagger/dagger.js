@@ -1,6 +1,6 @@
 /* ************************************************************************
  *  <copyright file="dagger.js" company="DAGGER TEAM">
- *  Copyright (c) 2016, 2024 All Right Reserved
+ *  Copyright (c) 2016, 2025 All Right Reserved
  *
  *  THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY
  *  KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -159,7 +159,7 @@ export default (({ asserter, logger, groupStarter, groupEnder, warner } = ((mess
     document.head.appendChild(style);
     style.disabled = disabled;
     style.setAttribute('name', name);
-    style.setAttribute('router-debug', location.href);
+    style.setAttribute('route-debug', location.href);
     style.setAttribute('active-debug', !disabled);
     return style;
 }, templateResolver = content => {
@@ -190,7 +190,7 @@ export default (({ asserter, logger, groupStarter, groupEnder, warner } = ((mess
         return value;
     },
     set: (target, property, newValue) => {
-        asserter('It\'s illegal to overwrite "$router" of the rootScope', isRouterWritable || !Object.is(target, plainRootScope) || !Object.is(property, '$router'));
+        asserter('It\'s illegal to overwrite "$route" of the rootScope', isRouterWritable || !Object.is(target, plainRootScope) || !Object.is(property, '$route'));
         target[property] = newValue;
         if (!invalidSymbols.has(property) && hasOwnProperty.call(target, property)) {
             const topologySet = target[meta];
@@ -294,7 +294,7 @@ export default (({ asserter, logger, groupStarter, groupEnder, warner } = ((mess
     fetchViewModule (name) {
         const moduleProfile = this.fetchChild(name, true);
         if (moduleProfile) {
-            asserter(`The module "${ moduleProfile.path }" is referenced but not declared in the "modules" field of the current router`, !Object.is(moduleProfile.state, 'unresolved'));
+            asserter(`The module "${ moduleProfile.path }" is referenced but not declared in the "modules" field of the current route`, !Object.is(moduleProfile.state, 'unresolved'));
             return moduleProfile;
         } else {
             asserter(`There is no valid module named "${ name }" found`, this.parent);
@@ -1006,7 +1006,7 @@ export default (({ asserter, logger, groupStarter, groupEnder, warner } = ((mess
 }) => {
     NodeContext.prototype.updateController = ((queueingControllerSet = new Set, processor = (nodeContext, controller, force) => {
         if (!nodeContext.profile) { return; }
-        const { decorators: { once, remove, router, lazy }, topologySet, updater, name } = controller, subscribable = !once || lazy;
+        const { decorators: { once, remove, route, lazy }, topologySet, updater, name } = controller, subscribable = !once || lazy;
         if (force || (topologySet && [...topologySet].some(topology => !Object.is(topology.oldValue, topology.value)))) {
             if (topologySet && topologySet.size) {
                 topologySet.forEach(topology => topology.unsubscribe(controller)); // TODO: optimize with cache
@@ -1015,7 +1015,7 @@ export default (({ asserter, logger, groupStarter, groupEnder, warner } = ((mess
             const suspendedController = currentController;
             currentController = subscribable ? controller : null;
             const data = controller.processor(nodeContext.node);
-            subscribable && router && routerTopology.subscribe();
+            subscribable && route && routerTopology.subscribe();
             currentController = suspendedController;
             if (lazy && !name) { // lazy watch
                 controller.processor = data;
@@ -1159,7 +1159,7 @@ export default (({ asserter, logger, groupStarter, groupEnder, warner } = ((mess
         if (Object.is(resolvedType, 'event')) {
             fields.event = name;
             if (lifeCycleDirectiveNames[name]) {
-                directives[name] = directiveResolver(value, fields, Object.is(name, 'sentry') ? '$nextRouter' : '$node');
+                directives[name] = directiveResolver(value, fields, Object.is(name, 'sentry') ? '$nextRoute' : '$node');
             } else {
                 directives.eventHandlers.push(directiveResolver(value, fields, '$node, $event'));
             }
@@ -1250,7 +1250,7 @@ export default (({ asserter, logger, groupStarter, groupEnder, warner } = ((mess
         }
     }
     dispatch (source = dispatchSource.bubble) {
-        asserter('It is illegal to modify fields under "$router" of the rootScope', isRouterWritable || !Object.is(routerTopology, this.parent));
+        asserter('It is illegal to modify fields under "$route" of the rootScope', isRouterWritable || !Object.is(routerTopology, this.parent));
         Object.is(source, dispatchSource.mutation) || (this.parent && this.parent.parent && this.parent.dispatch(dispatchSource.bubble));
         const force = Object.is(source, dispatchSource.bubble);
         (this.value && this.value[meta]) ? this.value[meta].forEach(topology => topology.trigger(force)) : this.trigger(force);
@@ -1300,53 +1300,53 @@ export default (({ asserter, logger, groupStarter, groupEnder, warner } = ((mess
     } catch (error) {
         return;
     }
-}, routingChangeResolver = ((routerChangeResolver = ((resolver = nextRouter => {
-    groupEnder(`resolving modules of the router "${ nextRouter.path || '/' }"`);
-    logger(`\u2705 router has changed from "${ rootScope.$router?.path || '/' }" to "${ nextRouter.path || '/' }"`);
+}, routingChangeResolver = ((routerChangeResolver = ((resolver = nextRoute => {
+    groupEnder(`resolving modules of the route "${ nextRoute.path || '/' }"`);
+    logger(`\u2705 route has changed from "${ rootScope.$route?.path || '/' }" to "${ nextRoute.path || '/' }"`);
     processorResolver();
-    const currentStyleModuleSet = rootScope.$router && styleModuleCache[rootScope.$router.path];
+    const currentStyleModuleSet = rootScope.$route && styleModuleCache[rootScope.$route.path];
     isRouterWritable = true;
-    rootScope.$router = nextRouter;
+    rootScope.$route = nextRoute;
     isRouterWritable = false;
     if (!routerTopology) {
-        routerTopology = [...nextRouter[meta]][0];
+        routerTopology = [...nextRoute[meta]][0];
         rootNodeProfiles.map(nodeProfile => new NodeContext(nodeProfile));
     }
     if (!Object.is(currentStyleModuleSet, styleModuleSet)) {
         currentStyleModuleSet && currentStyleModuleSet.forEach(style => (style.disabled = !styleModuleSet.has(style), style.setAttribute('active-debug', !style.disabled)));
         styleModuleSet.forEach(style => (style.disabled = false, style.setAttribute('active-debug', true)));
     }
-    anchorResolver(nextRouter.anchor);
-}) => nextRouter => {
-    logger(`\u23f3 router is changing from "${ rootScope.$router?.path || '/' }" to "${ nextRouter.path || '/' }"...`);
-    const { path } = nextRouter;
+    anchorResolver(nextRoute.anchor);
+}) => nextRoute => {
+    logger(`\u23f3 route is changing from "${ rootScope.$route?.path || '/' }" to "${ nextRoute.path || '/' }"...`);
+    const { path } = nextRoute;
     styleModuleSet = styleModuleCache[path] || (styleModuleCache[path] = new Set);
-    groupStarter(`resolving modules of the router "${ nextRouter.path }"`);
-    return rootNamespace.resolve(nextRouter.modules).then(() => resolver(nextRouter));
+    groupStarter(`resolving modules of the route "${ nextRoute.path }"`);
+    return rootNamespace.resolve(nextRoute.modules).then(() => resolver(nextRoute));
 })()) => () => {
     const slash = '/', anchorIndex = location.hash.lastIndexOf('#@'), anchor = (anchorIndex >= 0) ? location.hash.substring(anchorIndex + 2) : '';
     let fullPath = ((Object.is(routerConfigs.mode, 'history') ? `${ location.pathname }${ location.search }` : location.hash.replace(anchor, ''))).replace(routerConfigs.prefix, '');
     fullPath.startsWith(slash) || (fullPath = `${ slash }${ fullPath }`);
-    const { mode, aliases, prefix } = routerConfigs, [rawPath = '', query = ''] = fullPath.split('?'), path = rawPath.substring(1), scenarios = {}, paths = Object.is(rawPath, slash) ? [''] : rawPath.split(slash), routers = [];
+    const { mode, aliases, prefix } = routerConfigs, [rawPath = '', query = ''] = fullPath.split('?'), path = rawPath.substring(1), params = {}, paths = Object.is(rawPath, slash) ? [''] : rawPath.split(slash), routes = [];
     let redirectPath = null;
     if (Reflect.has(aliases, path)) {
         redirectPath = aliases[path];
-        logger('\ud83e\udd98 router alias matched');
-    } else if (rootRouter.match(routers, scenarios, paths)) {
-        routers.reverse();
-        redirectPath = routers.find(router => router.redirectPath || Object.is(router.redirectPath, ''))?.redirectPath;
+        logger('\ud83e\udd98 route alias matched');
+    } else if (rootRouter.match(routes, params, paths)) {
+        routes.reverse();
+        redirectPath = routes.find(route => route.redirectPath || Object.is(route.redirectPath, ''))?.redirectPath;
     } else if (Reflect.has(routerConfigs, 'default')) {
-        asserter(`The router "${ path }" is invalid`, !Object.is(routerConfigs.default, path));
-        warner(`\u274e The router "${ path }" is invalid`);
+        asserter(`The route "${ path }" is invalid`, !Object.is(routerConfigs.default, path));
+        warner(`\u274e The route "${ path }" is invalid`);
         redirectPath = routerConfigs.default;
     } else {
-        asserter(`The router "${ path }" is invalid`);
+        asserter(`The route "${ path }" is invalid`);
     }
     if (redirectPath != null) {
-        logger(`The router is redirecting from "${ path }" to "${ redirectPath || '/' }"`);
+        logger(`The route is redirecting from "${ path }" to "${ redirectPath || '/' }"`);
         return history.replaceState(null, '', `${ query ? `${ redirectPath }?${ query }` : redirectPath }${ anchor }` || routerConfigs.prefix);
     }
-    const queries = {}, variables = Object.assign({}, ...routers.map(router => router.variables)), constants = Object.assign({}, ...routers.map(router => router.constants));
+    const queries = {}, variables = Object.assign({}, ...routes.map(route => route.variables)), constants = Object.assign({}, ...routes.map(route => route.constants));
     query && forEach([...new URLSearchParams(query)], ([key, value]) => (queries[key] = value));
     forEach(Object.keys(variables), key => {
         if (Reflect.has(queries, key) && !Reflect.has(constants, key)) {
@@ -1358,52 +1358,61 @@ export default (({ asserter, logger, groupStarter, groupEnder, warner } = ((mess
             }
         }
     });
-    const nextRouter = { url: location.href, mode, prefix, path, paths, modules: new Set(routers.map(router => router.modules).flat()), query, queries, scenarios, variables, constants, anchor };
-    logger(`\u23f3 resolving sentries within router "${ rootScope.$router?.path || '/' }"...`);
-    Promise.all([...sentrySet].map(sentry => Promise.resolve(sentry.processor(nextRouter)).then(prevent => ({ sentry, prevent })))).then(results => {
-        logger(`\u2705 resolved sentries within router "${ rootScope.$router?.path || '/' }"`);
+    const nextRoute = { url: location.href, mode, prefix, path, paths, modules: new Set(routes.map(route => route.modules).flat()), query, queries, params, variables, constants, anchor };
+    logger(`\u23f3 resolving sentries within route "${ rootScope.$route?.path || '/' }"...`);
+    Promise.all([...sentrySet].map(sentry => Promise.resolve(sentry.processor(nextRoute)).then(prevent => ({ sentry, prevent })))).then(results => {
+        logger(`\u2705 resolved sentries within route "${ rootScope.$route?.path || '/' }"`);
         const matchedOwners = results.filter(result => result.prevent).map(result => result.sentry.owner);
-        matchedOwners.length ? forEach(matchedOwners, owner => warner(['\u274e The router redirect is prevented by the "$sentry" directive declared on the "%o" element', owner.node || owner.profile.node])) || originalPushState.call(history, null, '', rootScope.$router.url) : routerChangeResolver(nextRouter);
+        matchedOwners.length ? forEach(matchedOwners, owner => warner(['\u274e The route redirect is prevented by the "$sentry" directive declared on the "%o" element', owner.node || owner.profile.node])) || originalPushState.call(history, null, '', rootScope.$route.url) : routerChangeResolver(nextRoute);
     });
 })(), Router = class {
-    constructor (router, parent = null) {
-        const { children, constants = {}, variables = {}, modules = [], tailable = false, redirect = '' } = router;
+    constructor (route, parent = null) {
+        const { children, constants = {}, variables = {}, modules = [], tailable = false, redirect = '' } = route;
         this.layer = parent ? (parent.layer + 1) : 0;
         const space = new Array(this.layer * 4).fill(' ').join('');
-        let path = (router.path || '').trim();
+        let path = (route.path instanceof String) ? (route.path || '').trim() : route.path;
         this.modules = arrayWrapper(modules);
-        asserter([`${ space }The "modules" field of router should be either "string" or "string array" matched RegExp "${ moduleNameRegExp.toString() }" instead of "%o"`, modules], this.modules.every(module => isString(module) && moduleNameRegExp.test(module)));
+        asserter([`${ space }The "modules" field of route should be either "string" or "string array" matched RegExp "${ moduleNameRegExp.toString() }" instead of "%o"`, modules], this.modules.every(module => isString(module) && moduleNameRegExp.test(module)));
         if (parent) {
             (!path || Object.is(path, '*')) && (path = '.+');
             this.path = `${ parent.path }/${ path }`;
         } else {
-            warner(`${ space }\u274e The "path" field of the root router will be ignored`, !Reflect.has(router, 'path'));
+            warner(`${ space }\u274e The "path" field of the root route will be ignored`, !Reflect.has(route, 'path'));
             path = '';
             this.path = '';
         }
-        logger(`${ space }\u23f3 resolving the ${ this.path ? `router with path "${ this.path }"` : 'root router' }`);
+        logger(`${ space }\u23f3 resolving the ${ this.path ? `route with path "${ this.path }"` : 'root route' }`);
         if (redirect) {
             this.redirectPath = (redirect instanceof Function) ? redirect(rootScope, rootNamespace.module) : functionResolver(`($module, $scope) => { with ($module) with ($scope) return (() => { 'use strict'; return ${ redirect }; })() }`)(rootNamespace.module, rootScope);
         }
-        this.constants = constants, this.variables = variables, this.children = null, this.parent = parent, this.scenarios = (path instanceof Object) ? Object.keys(path).map(scenario => ({ scenario, regExp: new RegExp(path[scenario] || '^$') })) : [{ scenario: path, regExp: new RegExp(`^${ path }$`) }];
+        this.constants = constants, this.variables = variables, this.children = null, this.parent = parent, this.params = (path instanceof Object) ? Object.keys(path).map(param => ({ param, regExp: new RegExp(path[param] || '^.+$') })) : path.split('/').map(subPath => {
+            subPath = subPath.trim();
+            return subPath.startsWith(':') ? {
+                param: subPath.substring(1).trim(),
+                regExp: /^.+$/
+            } : {
+                param: subPath,
+                regExp: new RegExp(`^${ subPath }$`)
+            };
+        });
         if (children) {
-            asserter([`${ space }The router's "children" field should be "array" instead of "%o"`, children], Array.isArray(children));
+            asserter([`${ space }The route's "children" field should be "array" instead of "%o"`, children], Array.isArray(children));
             this.children = children.map(child => new Router(child, this));
         }
         this.tailable = tailable || !this.children?.length;
-        logger(`${ space }\u2705 resolved the ${ this.path ? `router with path "${ this.path }"` : 'root router' }`);
+        logger(`${ space }\u2705 resolved the ${ this.path ? `route with path "${ this.path }"` : 'root route' }`);
     }
-    match (routers, scenarios, paths, length = paths.length, start = 0) {
-        const scenarioLength = this.scenarios.length;
-        if ((length >= scenarioLength) && this.scenarios.every(({ scenario, regExp }, index) => {
+    match (routes, params, paths, length = paths.length, start = 0) {
+        const paramLength = this.params.length;
+        if ((length >= paramLength) && this.params.every(({ param, regExp }, index) => {
             const path = paths[start + index];
             if (regExp.test(path)) {
-                scenarios[scenario] = path;
+                params[param] = path;
                 return true;
             }
         })) {
-            start += scenarioLength;
-            return ((Object.is(length, start) && this.tailable) || this.children?.find(child => child.match(routers, scenarios, paths, length, start))) && routers.push(this);
+            start += paramLength;
+            return ((Object.is(length, start) && this.tailable) || this.children?.find(child => child.match(routes, params, paths, length, start))) && routes.push(this);
         }
     }
 }) => {
@@ -1476,16 +1485,16 @@ export default (({ asserter, logger, groupStarter, groupEnder, warner } = ((mess
         const prefix = routerConfigs.prefix.trim(), isHistoryMode = Object.is(routerConfigs.mode, 'history');
         if (prefix) {
             if (isHistoryMode) {
-                asserter(`In "history" router mode, it's illegal to use "${ prefix }" as router prefix because it contains non-word character`, /^\w*$/.test(prefix));
+                asserter(`In "history" route mode, it's illegal to use "${ prefix }" as route prefix because it contains non-word character`, /^\w*$/.test(prefix));
                 routerConfigs.prefix = `/${ prefix }/`;
             } else {
-                asserter(`In "hash" router mode, it's illegal to use "${ prefix }" as router prefix because it starts with "@"`, !prefix.startsWith('@'));
+                asserter(`In "hash" route mode, it's illegal to use "${ prefix }" as route prefix because it starts with "@"`, !prefix.startsWith('@'));
                 routerConfigs.prefix = `#${ prefix }/`;
             }
         } else {
             routerConfigs.prefix = isHistoryMode ? '/' : '#';
         }
-        plainRootScope = { $router: null };
+        plainRootScope = { $route: null };
         rootScope = Object.seal(proxyResolver(plainRootScope));
         moduleConfigNormalizer(modules.content);
         const html = document.documentElement, routing = routerConfigs.routing || { modules: Object.keys(modules.content) };

@@ -1,6 +1,27 @@
 {
     "mode": "history",
     "routing": {
-        "modules": ["app"]
+        "tailable": true,
+        "constants": {
+            "viewName": "post_list"
+        },
+        "modules": ["app", "post_list"],
+        "children": [{
+            "path": "new",
+            "modules": "post_list",
+            "constants": {
+                "viewName": "post_form"
+            }
+        }, {
+            /* "path": {
+                "edit": "edit",
+                "id": "[0-9]+"
+            }, */
+            "path": "edit/:id",
+            "modules": "post_form",
+            "constants": {
+                "viewName": "post_form"
+            }
+        }]
     }
 }

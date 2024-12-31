@@ -17,6 +17,11 @@
         };
     </script>
     <template id="view">
+        <p>
+            <a href="new" class="btn btn-success">
+                Add new
+            </a>
+        </p>
         <div +load="load()" +loaded="loaded($scope)">
             <post_item *each#item:post="postList"></post_item>
         </div>

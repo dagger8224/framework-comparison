@@ -16,10 +16,12 @@ export default function PostList() {
   };
   return (
     <>
-      <div>
+      <p>
         <Link to="/new" className="btn btn-success">
           Add new
         </Link>
+      </p>
+      <div>
         { postList.map(post => <PostItem key={post.id} post={post} onDelete={onDelete} />) }
       </div>
 

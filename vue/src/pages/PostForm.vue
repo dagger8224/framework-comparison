@@ -1,6 +1,11 @@
 <template>
     <div>
-        <pre>{{ model }}</pre>
+        <p>
+            <RouterLink to="/" class="btn btn-outline-secondary">
+                Go back to list
+            </RouterLink>
+        </p>
+        <!--<pre>{{ model }}</pre>-->
         <form @submit.prevent="onSubmit">
             <h1>{{ model.id ? 'Edit Post' : 'Create new Post' }}</h1>
             <div class="mb-3">
@@ -33,9 +38,10 @@
 
 <script setup>
 import { onMounted, ref } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 const route = useRoute();
+const router = useRouter();
 
 const model = ref({
     id: '',
@@ -51,6 +57,28 @@ onMounted(() => {
         model.value = post;
     });
 });
+
+function onSubmit() {
+    if (model.value.id) {
+        fetch(`https://jsonplaceholder.typicode.com/posts/${ model.value.id }`, {
+            method: 'PUT',
+            body: JSON.stringify(model.value)
+        })
+        .then(res => res.json())
+        .then(() => {
+            router.push('/');
+        });
+    } else {
+        fetch('https://jsonplaceholder.typicode.com/posts', {
+            method: 'POST',
+            body: JSON.stringify(model.value)
+        })
+        .then(res => res.json())
+        .then(() => {
+            router.push('/');
+        });
+    }
+}
 
 </script>
 
